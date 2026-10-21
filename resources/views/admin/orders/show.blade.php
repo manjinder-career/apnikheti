@@ -133,6 +133,56 @@
 
         <!-- Right: Status Update Form & Customer Info (1 col) -->
         <div class="space-y-6">
+            <!-- Payment & UPI Verification Panel -->
+            <div class="bg-white rounded-xl border p-6 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700">Payment & UPI Verification</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border {{ $order->paymentStatusBadgeClasses() }}">
+                        {{ ucfirst($order->payment_status) }}
+                    </span>
+                </div>
+
+                <div class="text-xs space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Method:</span>
+                        <strong class="text-gray-800">{{ $order->paymentMethodLabel() }}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Total Amount:</span>
+                        <strong class="text-forest-700 text-sm font-black">₹{{ number_format((float) $order->total_amount, 2) }}</strong>
+                    </div>
+
+                    <div class="pt-2 border-t border-gray-100">
+                        <span class="text-gray-500 block font-semibold mb-1">Customer Txn ID / UTR:</span>
+                        @if($order->transaction_id)
+                            <div class="flex items-center justify-between bg-sky-50 border border-sky-200 rounded-lg p-2.5">
+                                <code class="font-mono font-bold text-sky-900 text-xs select-all">{{ $order->transaction_id }}</code>
+                                <span class="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded font-semibold">Submitted</span>
+                            </div>
+                        @else
+                            <p class="text-gray-400 italic bg-gray-50 p-2.5 rounded-lg border border-dashed text-[11px]">No transaction ID submitted yet by customer.</p>
+                        @endif
+                    </div>
+
+                    @if($order->payment_verified_at)
+                        <p class="text-[11px] text-emerald-700 font-medium pt-1">
+                            ✓ Verified on {{ $order->payment_verified_at->format('M d, Y • h:i A') }}
+                        </p>
+                    @endif
+                </div>
+
+                @if($order->payment_status !== 'paid')
+                    <form action="{{ route('admin.orders.verify-payment', $order) }}" method="POST"
+                          onsubmit="return confirm('Confirm that payment of ₹{{ number_format((float) $order->total_amount, 2) }} has been received in bank/UPI?')">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-lg text-xs shadow transition flex items-center justify-center space-x-2">
+                            <span>✓ Verify Payment & Mark as Paid</span>
+                        </button>
+                    </form>
+                @endif
+            </div>
+
             <!-- Status Update Panel -->
             <div class="bg-white rounded-xl border p-6 shadow-sm">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 border-b pb-3 mb-4">
@@ -163,6 +213,12 @@
                             <option value="refunded" {{ $order->payment_status === 'refunded' ? 'selected' : '' }}>Refunded</option>
                             <option value="failed" {{ $order->payment_status === 'failed' ? 'selected' : '' }}>Failed</option>
                         </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Transaction ID / UTR Reference</label>
+                        <input type="text" name="transaction_id" value="{{ old('transaction_id', $order->transaction_id) }}" placeholder="e.g. 429182749182"
+                               class="w-full text-xs p-2.5 rounded-lg border border-gray-300 font-mono">
                     </div>
 
                     <div>

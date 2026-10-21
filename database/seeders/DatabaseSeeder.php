@@ -71,6 +71,9 @@ class DatabaseSeeder extends Seeder
             ['key' => 'contact_address', 'value' => 'Punjab, India', 'group' => 'contact'],
             ['key' => 'facebook_url', 'value' => 'https://facebook.com/apnikhetiapnebeej', 'group' => 'social'],
             ['key' => 'youtube_url', 'value' => 'https://youtube.com/@apnikhetiapnebeej', 'group' => 'social'],
+            ['key' => 'upi_id', 'value' => 'apnikheti@sbi', 'group' => 'ecommerce'],
+            ['key' => 'upi_payee_name', 'value' => 'Apni Kheti Apne Beej', 'group' => 'ecommerce'],
+            ['key' => 'upi_note', 'value' => 'Please note: Your order will be processed after our team verifies the payment transaction ID.', 'group' => 'ecommerce'],
         ];
 
         foreach ($settings as $setting) {

@@ -28,6 +28,10 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'status',
+        'transaction_id',
+        'payment_verified_at',
+        'upi_id',
+        'payment_notes',
         'courier_name',
         'tracking_number',
         'customer_notes',
@@ -38,6 +42,7 @@ class Order extends Model
         'subtotal' => 'decimal:2',
         'shipping_cost' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'payment_verified_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -114,5 +119,35 @@ class Order extends Model
             'bank_transfer' => 'Direct Bank Transfer',
             default => strtoupper($this->payment_method),
         };
+    }
+
+    public function getUpiId(): string
+    {
+        return $this->upi_id ?: (SiteSetting::get('upi_id') ?: 'apnikheti@sbi');
+    }
+
+    public function getUpiPayeeName(): string
+    {
+        return SiteSetting::get('upi_payee_name') ?: 'Apni Kheti Apne Beej';
+    }
+
+    public function getUpiQrCodeUrl(): ?string
+    {
+        $qrPath = SiteSetting::get('upi_qr_code');
+        if ($qrPath && file_exists(public_path('storage/' . $qrPath))) {
+            return asset('storage/' . $qrPath);
+        }
+        return null;
+    }
+
+    public function getDynamicUpiQrUrl(): string
+    {
+        $upiId = $this->getUpiId();
+        $name = urlencode($this->getUpiPayeeName());
+        $amount = number_format((float) $this->total_amount, 2, '.', '');
+        $note = urlencode('Order ' . $this->order_number);
+        
+        $upiString = "upi://pay?pa={$upiId}&pn={$name}&am={$amount}&cu=INR&tn={$note}";
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=' . urlencode($upiString);
     }
 }

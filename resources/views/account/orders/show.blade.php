@@ -109,6 +109,13 @@
         @endif
     </div>
 
+    <!-- UPI Payment & Scanner Section -->
+    @if($order->payment_method === 'upi' || $order->payment_method === 'bank_transfer' || $order->payment_status !== 'paid')
+        <div class="mb-8">
+            @include('shop.partials.upi-payment-box', ['order' => $order])
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Items in this order (2 cols) -->
         <div class="lg:col-span-2 space-y-6">

@@ -116,6 +116,11 @@
                     @endif
                 </div>
 
+                <!-- UPI Payment & Scanner Section -->
+                @if($order->payment_method === 'upi' || $order->payment_method === 'bank_transfer' || $order->payment_status !== 'paid')
+                    @include('shop.partials.upi-payment-box', ['order' => $order])
+                @endif
+
                 <!-- Details & Timeline Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Items & Summary -->

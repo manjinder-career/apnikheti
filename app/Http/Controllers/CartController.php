@@ -35,7 +35,7 @@ class CartController extends Controller
     {
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:shop_products,id'],
-            'quantity' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:10000'],
         ]);
 
         $product = ShopProduct::findOrFail($validated['product_id']);

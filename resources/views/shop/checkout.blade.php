@@ -143,43 +143,47 @@
                     </div>
                 </div>
 
-                <!-- Payment Method Section -->
-                <div class="bg-white rounded-3xl border border-sky-100 p-6 md:p-8 shadow-sm space-y-4" x-data="{ paymentMethod: 'cod' }">
-                    <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-4 flex items-center space-x-2">
-                        <span>2.</span>
-                        <span>Select Payment Method</span>
-                    </h2>
+                <!-- Payment Method Section (UPI Only) -->
+                <div class="bg-white rounded-3xl border border-sky-100 p-6 md:p-8 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                            <span>2.</span>
+                            <span>Payment Method</span>
+                        </h2>
+                        <span class="text-[11px] font-bold bg-sky-100 text-sky-800 px-2.5 py-0.5 rounded-full">
+                            UPI Payment
+                        </span>
+                    </div>
 
-                    <div class="space-y-3">
-                        <!-- Cash on Delivery -->
-                        <label class="flex items-start space-x-3 p-4 rounded-2xl border cursor-pointer transition"
-                               :class="paymentMethod === 'cod' ? 'border-sky-600 bg-sky-50/40' : 'border-slate-200 hover:bg-slate-50'">
-                            <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="mt-1 text-sky-700">
-                            <div>
-                                <span class="text-xs font-bold text-slate-900 block">💵 Cash / Pay on Delivery (COD)</span>
-                                <span class="text-[11px] text-slate-500">Pay cash or scan QR when your traditional seeds are delivered to your doorstep.</span>
-                            </div>
-                        </label>
+                    <input type="hidden" name="payment_method" value="upi">
 
-                        <!-- UPI / QR Payment -->
-                        <label class="flex items-start space-x-3 p-4 rounded-2xl border cursor-pointer transition"
-                               :class="paymentMethod === 'upi' ? 'border-sky-600 bg-sky-50/40' : 'border-slate-200 hover:bg-slate-50'">
-                            <input type="radio" name="payment_method" value="upi" x-model="paymentMethod" class="mt-1 text-sky-700">
-                            <div>
-                                <span class="text-xs font-bold text-slate-900 block">📱 UPI / QR Transfer</span>
-                                <span class="text-[11px] text-slate-500">Google Pay, PhonePe, Paytm, BHIM UPI. Payment details provided after placing order.</span>
+                    <div class="bg-gradient-to-r from-sky-50 via-white to-sky-50/50 border-2 border-sky-300 rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-11 h-11 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xl shadow-sm border border-sky-200">
+                                    📱
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">UPI / QR Code Transfer</span>
+                                    <span class="text-[11px] text-slate-600">Google Pay • PhonePe • Paytm • BHIM • Cred • Banking Apps</span>
+                                </div>
                             </div>
-                        </label>
+                            <span class="text-xs font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-sm flex items-center space-x-1">
+                                <span>✓</span>
+                                <span>Selected</span>
+                            </span>
+                        </div>
 
-                        <!-- Direct Bank Transfer -->
-                        <label class="flex items-start space-x-3 p-4 rounded-2xl border cursor-pointer transition"
-                               :class="paymentMethod === 'bank_transfer' ? 'border-sky-600 bg-sky-50/40' : 'border-slate-200 hover:bg-slate-50'">
-                            <input type="radio" name="payment_method" value="bank_transfer" x-model="paymentMethod" class="mt-1 text-sky-700">
-                            <div>
-                                <span class="text-xs font-bold text-slate-900 block">🏦 Direct Bank / NEFT / IMPS Transfer</span>
-                                <span class="text-[11px] text-slate-500">Transfer directly to initiative bank account. Seeds dispatched upon payment confirmation.</span>
-                            </div>
-                        </label>
+                        <p class="text-xs text-slate-600 bg-white/90 p-3.5 rounded-xl border border-sky-100 leading-relaxed">
+                            Official UPI ID and QR code scanner will appear on the confirmation page immediately after clicking Place Order. You can pay via any UPI app and submit your 12-digit transaction ID.
+                        </p>
+
+                        <div class="flex items-start space-x-2 text-[11px] text-amber-900 bg-amber-50/90 p-3 rounded-xl border border-amber-200">
+                            <span class="text-base leading-none">⚠️</span>
+                            <span class="leading-relaxed">
+                                <strong>Important:</strong> Traditional seed packets are carefully hand-inspected and dispatched upon payment verification by our conservation team.
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

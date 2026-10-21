@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class AdminOrderController extends Controller
 {
@@ -60,10 +61,18 @@ class AdminOrderController extends Controller
         $validated = $request->validate([
             'status' => ['required', 'in:pending,processing,shipped,out_for_delivery,delivered,cancelled'],
             'payment_status' => ['required', 'in:pending,paid,refunded,failed'],
+            'transaction_id' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('orders', 'transaction_id')->ignore($order->id),
+            ],
             'courier_name' => ['nullable', 'string', 'max:100'],
             'tracking_number' => ['nullable', 'string', 'max:100'],
             'admin_notes' => ['nullable', 'string', 'max:2000'],
             'status_comment' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'transaction_id.unique' => 'This Transaction ID / UTR is already assigned to another order.',
         ]);
 
         $oldStatus = $order->status;
@@ -85,9 +94,16 @@ class AdminOrderController extends Controller
                 }
             }
 
+            $paymentVerifiedAt = $order->payment_verified_at;
+            if ($validated['payment_status'] === 'paid' && ! $paymentVerifiedAt) {
+                $paymentVerifiedAt = now();
+            }
+
             $order->update([
                 'status' => $newStatus,
                 'payment_status' => $validated['payment_status'],
+                'transaction_id' => $validated['transaction_id'] ?? $order->transaction_id,
+                'payment_verified_at' => $paymentVerifiedAt,
                 'courier_name' => $validated['courier_name'],
                 'tracking_number' => $validated['tracking_number'],
                 'admin_notes' => $validated['admin_notes'],
@@ -96,6 +112,9 @@ class AdminOrderController extends Controller
             $comment = $validated['status_comment'];
             if (empty($comment)) {
                 $comment = 'Status updated to ' . $order->statusLabel() . ' (Payment: ' . ucfirst($validated['payment_status']) . ').';
+                if (! empty($validated['transaction_id'])) {
+                    $comment .= ' Ref/Txn ID: ' . $validated['transaction_id'] . '.';
+                }
                 if (! empty($validated['tracking_number'])) {
                     $comment .= ' Tracking #: ' . $validated['tracking_number'] . ' via ' . ($validated['courier_name'] ?? 'courier');
                 }
@@ -110,6 +129,24 @@ class AdminOrderController extends Controller
         });
 
         return back()->with('success', 'Order #' . $order->order_number . ' updated successfully.');
+    }
+
+    public function verifyPayment(Order $order)
+    {
+        $order->update([
+            'payment_status' => 'paid',
+            'payment_verified_at' => now(),
+            'status' => ($order->status === 'pending') ? 'processing' : $order->status,
+        ]);
+
+        OrderStatusHistory::create([
+            'order_id' => $order->id,
+            'status' => $order->status,
+            'comment' => 'Payment verified by Admin (' . Auth::user()->name . '). Marked as Paid. Ready for dispatch.',
+            'created_by' => 'Admin (' . Auth::user()->name . ')',
+        ]);
+
+        return back()->with('success', 'Payment verified and confirmed for Order #' . $order->order_number . '.');
     }
 
     public function invoice(Order $order)

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
@@ -49,7 +50,7 @@ class CheckoutController extends Controller
             'shipping_city' => ['required', 'string', 'max:100'],
             'shipping_state' => ['required', 'string', 'max:100'],
             'shipping_pincode' => ['required', 'string', 'max:20'],
-            'payment_method' => ['required', 'in:cod,upi,bank_transfer'],
+            'payment_method' => ['nullable', 'in:upi'],
             'customer_notes' => ['nullable', 'string', 'max:1000'],
         ];
 
@@ -121,7 +122,7 @@ class CheckoutController extends Controller
                 'subtotal' => $cart->subtotal(),
                 'shipping_cost' => $cart->shippingCost(),
                 'total_amount' => $cart->total(),
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => $validated['payment_method'] ?? 'upi',
                 'payment_status' => 'pending',
                 'status' => 'pending',
                 'customer_notes' => $validated['customer_notes'] ?? null,
@@ -161,5 +162,45 @@ class CheckoutController extends Controller
             ->firstOrFail();
 
         return view('shop.success', compact('order'));
+    }
+
+    public function submitPayment(Request $request, string $orderNumber)
+    {
+        $order = Order::where('order_number', $orderNumber)->firstOrFail();
+
+        if (Auth::check() && ! Auth::user()->isAdmin() && $order->user_id && $order->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to this order.');
+        }
+
+        $validated = $request->validate([
+            'transaction_id' => [
+                'required',
+                'string',
+                'min:6',
+                'max:100',
+                Rule::unique('orders', 'transaction_id')->ignore($order->id),
+            ],
+            'payment_notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'transaction_id.required' => 'Please enter your UPI Transaction ID or UTR number.',
+            'transaction_id.min' => 'The UPI Transaction ID / UTR must be at least 6 characters.',
+            'transaction_id.unique' => 'This UPI Transaction ID / UTR has already been submitted for another order. Each payment transaction ID can only be used once.',
+        ]);
+
+        $txnId = trim($validated['transaction_id']);
+
+        $order->update([
+            'transaction_id' => $txnId,
+            'payment_notes' => $validated['payment_notes'] ?? $order->payment_notes,
+        ]);
+
+        OrderStatusHistory::create([
+            'order_id' => $order->id,
+            'status' => $order->status,
+            'comment' => 'Customer submitted UPI Transaction ID / UTR: ' . $txnId . '. Payment verification in progress.',
+            'created_by' => Auth::check() ? Auth::user()->name : ($order->customer_name . ' (Customer)'),
+        ]);
+
+        return back()->with('success', 'Transaction ID submitted successfully! Your order will be processed once our team verifies the payment.');
     }
 }

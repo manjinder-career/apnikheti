@@ -186,7 +186,7 @@ class EcommerceTest extends TestCase
         ]);
 
         $checkoutPage = $this->get(route('checkout.index'));
-        $checkoutPage->assertOk()->assertSee('Customer & Delivery Details');
+        $checkoutPage->assertOk()->assertSee('Delivery Details');
 
         $orderPayload = [
             'customer_name' => 'Amanjot Singh',
@@ -196,7 +196,7 @@ class EcommerceTest extends TestCase
             'shipping_city' => 'Mansa',
             'shipping_state' => 'Punjab',
             'shipping_pincode' => '151505',
-            'payment_method' => 'cod',
+            'payment_method' => 'upi',
             'customer_notes' => 'Call on arrival',
         ];
 
@@ -206,7 +206,7 @@ class EcommerceTest extends TestCase
         $this->assertNotNull($order);
         $this->assertEquals('Amanjot Singh', $order->customer_name);
         $this->assertEquals('pending', $order->status);
-        $this->assertEquals('cod', $order->payment_method);
+        $this->assertEquals('upi', $order->payment_method);
         $this->assertCount(1, $order->items);
 
         $checkoutResponse->assertRedirect(route('checkout.success', $order->order_number));
@@ -386,5 +386,104 @@ class EcommerceTest extends TestCase
         $customer->refresh();
         $this->assertEquals('Gurpreet Singh AdminEdited', $customer->name);
         $this->assertEquals('Amritsar', $customer->city);
+    }
+
+    public function test_order_page_displays_upi_id_scanner_and_verification_note()
+    {
+        $order = Order::where('order_number', 'AK-20261021-DEMO2')->first();
+        $order->update(['payment_method' => 'upi', 'payment_status' => 'pending']);
+
+        // Check public tracking page has UPI box, UPI ID, and note
+        $response = $this->get(route('orders.track', [
+            'order_number' => $order->order_number,
+            'contact' => $order->customer_email,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('UPI Payment & Scanner', false)
+            ->assertSee($order->getUpiId())
+            ->assertSee('order will be processed after our team verifies the payment transaction ID', false);
+    }
+
+    public function test_user_can_submit_transaction_id_for_order()
+    {
+        $order = Order::where('order_number', 'AK-20261021-DEMO2')->first();
+
+        $response = $this->post(route('orders.payment.submit', $order->order_number), [
+            'transaction_id' => 'UPI429182749182',
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $order->refresh();
+        $this->assertEquals('UPI429182749182', $order->transaction_id);
+
+        $this->assertDatabaseHas('order_status_histories', [
+            'order_id' => $order->id,
+            'comment' => 'Customer submitted UPI Transaction ID / UTR: UPI429182749182. Payment verification in progress.',
+        ]);
+    }
+
+    public function test_admin_can_verify_payment_and_mark_as_paid()
+    {
+        $admin = User::where('email', 'admin@apnikheti.org')->first();
+        $order = Order::where('order_number', 'AK-20261021-DEMO2')->first();
+        $order->update(['transaction_id' => 'TXN99887766', 'payment_status' => 'pending']);
+
+        $response = $this->actingAs($admin)
+            ->patch(route('admin.orders.verify-payment', $order));
+
+        $response->assertSessionHas('success');
+
+        $order->refresh();
+        $this->assertEquals('paid', $order->payment_status);
+        $this->assertNotNull($order->payment_verified_at);
+        $this->assertEquals('processing', $order->status);
+    }
+
+    public function test_checkout_rejects_non_upi_payment_methods_and_requires_upi()
+    {
+        $product = ShopProduct::where('stock_quantity', '>', 5)->first();
+        $this->post(route('cart.add'), ['product_id' => $product->id, 'quantity' => 1]);
+
+        $invalidPayload = [
+            'customer_name' => 'Harjit Singh',
+            'customer_email' => 'harjit@example.com',
+            'customer_phone' => '+91 98888 77777',
+            'shipping_address' => 'VPO Bhikhi',
+            'shipping_city' => 'Mansa',
+            'shipping_state' => 'Punjab',
+            'shipping_pincode' => '151504',
+            'payment_method' => 'cod',
+        ];
+
+        $response = $this->post(route('checkout.store'), $invalidPayload);
+        $response->assertSessionHasErrors('payment_method');
+    }
+
+    public function test_transaction_id_must_be_unique_across_orders_and_rejects_duplicates()
+    {
+        $order1 = Order::where('order_number', 'AK-20261021-DEMO1')->first();
+        $order2 = Order::where('order_number', 'AK-20261021-DEMO2')->first();
+
+        // 1. Submit transaction ID for order 1
+        $this->post(route('orders.payment.submit', $order1->order_number), [
+            'transaction_id' => 'UTR998877665544',
+        ])->assertSessionHas('success');
+
+        $order1->refresh();
+        $this->assertEquals('UTR998877665544', $order1->transaction_id);
+
+        // 2. Attempting to submit the exact same transaction ID on order 2 must be rejected
+        $duplicateResponse = $this->post(route('orders.payment.submit', $order2->order_number), [
+            'transaction_id' => 'UTR998877665544',
+        ]);
+
+        $duplicateResponse->assertSessionHasErrors(['transaction_id']);
+
+        // 3. Re-submitting / updating on the SAME order (order 1) is allowed
+        $this->post(route('orders.payment.submit', $order1->order_number), [
+            'transaction_id' => 'UTR998877665544',
+        ])->assertSessionHas('success');
     }
 }

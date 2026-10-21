@@ -84,6 +84,7 @@ Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/orders/{orderNumber}/success', [CheckoutController::class, 'success'])->name('checkout.success');
+Route::post('/orders/{orderNumber}/payment', [CheckoutController::class, 'submitPayment'])->name('orders.payment.submit');
 
 // Order Tracking
 Route::get('/track-order', [OrderTrackingController::class, 'showForm'])->name('orders.track');
@@ -145,6 +146,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
+    Route::patch('/orders/{order}/verify-payment', [AdminOrderController::class, 'verifyPayment'])->name('orders.verify-payment');
     Route::get('/orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
 
     // E-Commerce: Customer Management

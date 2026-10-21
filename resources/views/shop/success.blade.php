@@ -64,6 +64,11 @@
             </div>
         </div>
 
+        <!-- UPI Payment Box with Scanner & Transaction Submission -->
+        <div class="max-w-2xl mx-auto pt-2">
+            @include('shop.partials.upi-payment-box', ['order' => $order])
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
             <a href="{{ route('orders.track', ['order_number' => $order->order_number, 'contact' => $order->customer_email]) }}"
