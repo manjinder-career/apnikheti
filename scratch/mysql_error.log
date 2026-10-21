@@ -1,0 +1,27 @@
+2026-10-09T10:36:09.368912Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.46-0ubuntu0.24.04.4) initializing of server in progress as process 31
+2026-10-09T10:36:09.371335Z 0 [Warning] [MY-010122] [Server] One can only use the --user switch if running as root
+2026-10-09T10:36:09.375193Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-10-09T10:36:09.840134Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2026-10-09T10:36:11.595972Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
+2026-10-09T10:36:40.405605Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.46-0ubuntu0.24.04.4) starting as process 33
+2026-10-09T10:36:40.407472Z 0 [Warning] [MY-010122] [Server] One can only use the --user switch if running as root
+2026-10-09T10:36:40.412371Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-10-09T10:36:40.566681Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2026-10-09T10:36:41.637247Z 0 [ERROR] [MY-011292] [Server] Plugin mysqlx reported: 'Preparation of I/O interfaces failed, X Protocol won't be accessible'
+2026-10-09T10:36:41.637279Z 0 [ERROR] [MY-011300] [Server] Plugin mysqlx reported: 'Setup of bind-address: '127.0.0.1' port: 33060 failed, `bind()` failed with error: Address already in use (98). Do you already have another mysqld server running with Mysqlx ?'
+2026-10-09T10:36:41.637286Z 0 [ERROR] [MY-013597] [Server] Plugin mysqlx reported: 'Value '127.0.0.1' set to `Mysqlx_bind_address`, X Plugin can't bind to it. Skipping this value.'
+2026-10-09T10:36:41.637298Z 0 [ERROR] [MY-011300] [Server] Plugin mysqlx reported: 'Setup of socket: '/var/run/mysqld/mysqlx.sock' failed, can't create lock file /var/run/mysqld/mysqlx.sock.lock'
+2026-10-09T10:36:41.770570Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2026-10-09T10:36:41.770617Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+2026-10-09T10:36:41.775584Z 0 [ERROR] [MY-010262] [Server] Can't start server: Bind on TCP/IP port: Address already in use
+2026-10-09T10:36:41.775612Z 0 [ERROR] [MY-010257] [Server] Do you already have another mysqld server running on port: 3306 ?
+2026-10-09T10:36:41.775631Z 0 [ERROR] [MY-010119] [Server] Aborting
+2026-10-09T10:36:43.271638Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.46-0ubuntu0.24.04.4)  (Ubuntu).
+2026-10-09T10:37:49.808611Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.46-0ubuntu0.24.04.4) starting as process 31
+2026-10-09T10:37:49.810690Z 0 [Warning] [MY-010122] [Server] One can only use the --user switch if running as root
+2026-10-09T10:37:49.814242Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-10-09T10:37:49.974094Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2026-10-09T10:37:50.139765Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2026-10-09T10:37:50.139796Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+2026-10-09T10:37:50.144540Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/home/user/mani/Apps/demoProjects/apni-kheti/scratch' in the path is accessible to all OS users. Consider choosing a different directory.
+2026-10-09T10:37:50.160210Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.46-0ubuntu0.24.04.4'  socket: '/home/user/mani/Apps/demoProjects/apni-kheti/scratch/mysql.sock'  port: 3307  (Ubuntu).
