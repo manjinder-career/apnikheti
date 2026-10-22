@@ -64,9 +64,13 @@
             </div>
         </div>
 
-        <!-- UPI Payment Box with Scanner & Transaction Submission -->
+        <!-- Payment Gateway / UPI Box -->
         <div class="max-w-2xl mx-auto pt-2">
-            @include('shop.partials.upi-payment-box', ['order' => $order])
+            @if($order->payment_method === 'razorpay')
+                @include('shop.partials.razorpay-payment-box', ['order' => $order])
+            @else
+                @include('shop.partials.upi-payment-box', ['order' => $order])
+            @endif
         </div>
 
         <!-- Action Buttons -->

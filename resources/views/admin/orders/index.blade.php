@@ -36,14 +36,14 @@
             <p class="text-2xl font-black text-sky-800 mt-1">{{ $counts['processing'] }}</p>
         </a>
 
-        <a href="{{ route('admin.orders.index', ['status' => 'shipped']) }}" class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-200 shadow-sm hover:border-indigo-400 transition">
-            <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Shipped</p>
-            <p class="text-2xl font-black text-indigo-800 mt-1">{{ $counts['shipped'] }}</p>
+        <a href="{{ route('admin.orders.index', ['status' => 'shipped']) }}" class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 shadow-sm hover:border-emerald-400 transition">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Dispatched</p>
+            <p class="text-2xl font-black text-emerald-800 mt-1">{{ $counts['shipped'] + ($counts['delivered'] ?? 0) }}</p>
         </a>
 
-        <a href="{{ route('admin.orders.index', ['status' => 'delivered']) }}" class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 shadow-sm hover:border-emerald-400 transition">
-            <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Delivered</p>
-            <p class="text-2xl font-black text-emerald-800 mt-1">{{ $counts['delivered'] }}</p>
+        <a href="{{ route('admin.orders.index', ['status' => 'cancelled']) }}" class="bg-rose-50/60 p-4 rounded-xl border border-rose-200 shadow-sm hover:border-rose-400 transition">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-rose-700">Cancelled</p>
+            <p class="text-2xl font-black text-rose-800 mt-1">{{ $counts['cancelled'] }}</p>
         </a>
     </div>
 
@@ -57,11 +57,9 @@
 
             <select name="status" class="text-xs px-3 py-2.5 rounded-lg border border-gray-300 bg-white">
                 <option value="all">All Order Statuses</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing</option>
-                <option value="shipped" {{ request('status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                <option value="out_for_delivery" {{ request('status') === 'out_for_delivery' ? 'selected' : '' }}>Out for Delivery</option>
-                <option value="delivered" {{ request('status') === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending Confirmation</option>
+                <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing & Packing</option>
+                <option value="shipped" {{ request('status') === 'shipped' ? 'selected' : '' }}>Dispatched</option>
                 <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
             </select>
 

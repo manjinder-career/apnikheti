@@ -136,14 +136,32 @@
                             <span class="font-semibold text-slate-900">₹{{ number_format($subtotal, 2) }}</span>
                         </div>
 
+                        <div class="flex justify-between items-center text-[11px] text-slate-500">
+                            <span>Total Package Weight</span>
+                            <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">📦 {{ $formattedWeight }}</span>
+                        </div>
+
                         <div class="flex justify-between items-center">
-                            <span>Delivery & Handling</span>
+                            <div>
+                                <span>Delivery & Handling</span>
+                                <span class="block text-[10px] text-slate-400">Calculated by weight & state</span>
+                            </div>
                             @if($shippingCost == 0)
                                 <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">FREE</span>
                             @else
                                 <span class="font-semibold text-slate-900">₹{{ number_format($shippingCost, 2) }}</span>
                             @endif
                         </div>
+
+                        @if($amountNeededForFreeShipping > 0)
+                            <div class="bg-emerald-50/80 border border-emerald-200 text-emerald-800 p-2.5 rounded-xl text-[11px] font-medium leading-relaxed">
+                                🌿 Add <strong>₹{{ number_format($amountNeededForFreeShipping, 2) }}</strong> more of seeds to unlock <strong>FREE Delivery</strong> in Punjab!
+                            </div>
+                        @else
+                            <div class="bg-emerald-100/70 border border-emerald-300 text-emerald-900 p-2 rounded-xl text-[11px] font-bold text-center">
+                                🎉 You've unlocked FREE Delivery in Punjab!
+                            </div>
+                        @endif
 
                         <div class="border-t border-slate-100 pt-3 flex justify-between items-baseline">
                             <span class="text-sm font-bold text-slate-900">Total Amount</span>

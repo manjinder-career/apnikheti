@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'razorpay' => [
+        'key' => env('RAZORPAY_KEY_ID', ''),
+        'secret' => env('RAZORPAY_KEY_SECRET', ''),
+        'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET', ''),
+        'mode' => env('RAZORPAY_MODE', 'test'),
+        'merchant_name' => env('RAZORPAY_MERCHANT_NAME', 'Apni Kheti Apne Beej'),
+    ],
+
 ];

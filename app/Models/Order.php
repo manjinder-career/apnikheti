@@ -32,6 +32,9 @@ class Order extends Model
         'payment_verified_at',
         'upi_id',
         'payment_notes',
+        'razorpay_order_id',
+        'razorpay_payment_id',
+        'razorpay_signature',
         'courier_name',
         'tracking_number',
         'customer_notes',
@@ -79,9 +82,9 @@ class Order extends Model
         return match ($this->status) {
             'pending' => 'Pending Confirmation',
             'processing' => 'Processing & Packing',
-            'shipped' => 'Shipped',
-            'out_for_delivery' => 'Out for Delivery',
-            'delivered' => 'Delivered',
+            'shipped' => 'Dispatched',
+            'out_for_delivery' => 'Dispatched',
+            'delivered' => 'Dispatched',
             'cancelled' => 'Cancelled',
             default => ucfirst($this->status),
         };
@@ -92,9 +95,7 @@ class Order extends Model
         return match ($this->status) {
             'pending' => 'bg-amber-100 text-amber-800 border-amber-200',
             'processing' => 'bg-sky-100 text-sky-800 border-sky-200',
-            'shipped' => 'bg-indigo-100 text-indigo-800 border-indigo-200',
-            'out_for_delivery' => 'bg-purple-100 text-purple-800 border-purple-200',
-            'delivered' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+            'shipped', 'out_for_delivery', 'delivered' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
             'cancelled' => 'bg-rose-100 text-rose-800 border-rose-200',
             default => 'bg-slate-100 text-slate-800 border-slate-200',
         };
@@ -115,10 +116,21 @@ class Order extends Model
     {
         return match ($this->payment_method) {
             'cod' => 'Cash / Pay on Delivery',
-            'upi' => 'UPI / QR Payment',
+            'upi' => 'Simple UPI / QR Payment',
+            'razorpay' => 'Razorpay (Cards, UPI, Netbanking)',
             'bank_transfer' => 'Direct Bank Transfer',
             default => strtoupper($this->payment_method),
         };
+    }
+
+    public function isRazorpay(): bool
+    {
+        return $this->payment_method === 'razorpay';
+    }
+
+    public function isUpi(): bool
+    {
+        return $this->payment_method === 'upi';
     }
 
     public function getUpiId(): string

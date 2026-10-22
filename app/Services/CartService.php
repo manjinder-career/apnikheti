@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ShopProduct;
+use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Session;
 
 class CartService
@@ -45,6 +46,7 @@ class CartService
             'quantity' => $newQty,
             'unit' => $product->unit ?? 'packet',
             'weight' => $product->weight,
+            'weight_grams' => $product->getWeightInGrams(),
             'image_url' => $product->photoUrl(),
             'stock' => $product->stock_quantity,
         ];
@@ -131,19 +133,132 @@ class CartService
         return round($subtotal, 2);
     }
 
-    public function shippingCost(): float
+    public function totalWeightInGrams(): int
+    {
+        $totalGrams = 0;
+        foreach ($this->getItems() as $id => $item) {
+            $qty = (int) ($item['quantity'] ?? 1);
+            if (! empty($item['weight_grams'])) {
+                $totalGrams += ((int) $item['weight_grams']) * $qty;
+            } else {
+                $product = ShopProduct::find($id);
+                $grams = $product ? $product->getWeightInGrams() : 100;
+                $totalGrams += $grams * $qty;
+            }
+        }
+        return $totalGrams;
+    }
+
+    public function totalWeightInKg(): float
+    {
+        return round($this->totalWeightInGrams() / 1000, 2);
+    }
+
+    public function formattedTotalWeight(): string
+    {
+        $grams = $this->totalWeightInGrams();
+        if ($grams >= 1000) {
+            $kg = $grams / 1000;
+            return ($kg == (int) $kg ? (int) $kg : number_format($kg, 2)) . ' Kg';
+        }
+        return $grams . 'g';
+    }
+
+    public function isPunjab(?string $state): bool
+    {
+        if (empty($state)) {
+            return true;
+        }
+        return strcasecmp(trim($state), 'punjab') === 0;
+    }
+
+    public function freeShippingThreshold(?string $state = null): float
+    {
+        $isPunjab = $this->isPunjab($state);
+        $settingKey = $isPunjab ? 'shipping_punjab_free_threshold' : 'shipping_outside_free_threshold';
+        $settingVal = SiteSetting::get($settingKey);
+
+        if ($settingVal !== null && $settingVal !== '') {
+            return (float) $settingVal;
+        }
+
+        return $isPunjab ? self::FREE_SHIPPING_THRESHOLD : 800.00;
+    }
+
+    public function amountNeededForFreeShipping(?string $state = null): float
+    {
+        $threshold = $this->freeShippingThreshold($state);
+        if ($threshold <= 0) {
+            return 0.00;
+        }
+        return (float) max(0, round($threshold - $this->subtotal(), 2));
+    }
+
+    public function shippingCost(?string $state = null): float
     {
         $subtotal = $this->subtotal();
         if ($subtotal <= 0) {
             return 0.00;
         }
 
-        return $subtotal >= self::FREE_SHIPPING_THRESHOLD ? 0.00 : self::FLAT_SHIPPING_RATE;
+        $isPunjab = $this->isPunjab($state);
+
+        // Check if free shipping threshold is satisfied
+        $freeThreshold = $this->freeShippingThreshold($state);
+        if ($freeThreshold > 0 && $subtotal >= $freeThreshold) {
+            return 0.00;
+        }
+
+        // Base rate (covers up to 1000g / 1 Kg)
+        $baseSettingKey = $isPunjab ? 'shipping_punjab_base_cost' : 'shipping_outside_base_cost';
+        $baseVal = SiteSetting::get($baseSettingKey);
+        $baseCost = ($baseVal !== null && $baseVal !== '') ? (float) $baseVal : ($isPunjab ? self::FLAT_SHIPPING_RATE : 80.00);
+
+        // Per additional Kg rate
+        $perKgSettingKey = $isPunjab ? 'shipping_punjab_per_kg' : 'shipping_outside_per_kg';
+        $perKgVal = SiteSetting::get($perKgSettingKey);
+        $perKgCost = ($perKgVal !== null && $perKgVal !== '') ? (float) $perKgVal : ($isPunjab ? 30.00 : 50.00);
+
+        $totalGrams = $this->totalWeightInGrams();
+
+        // If total weight is up to 1000g (1 Kg), charge only the base rate
+        if ($totalGrams <= 1000) {
+            return round($baseCost, 2);
+        }
+
+        // Additional kilograms rounded up to nearest whole Kg (standard courier billing slab)
+        $extraGrams = $totalGrams - 1000;
+        $extraKg = (int) ceil($extraGrams / 1000);
+        $cost = $baseCost + ($extraKg * $perKgCost);
+
+        return round($cost, 2);
     }
 
-    public function total(): float
+    public function total(?string $state = null): float
     {
-        return round($this->subtotal() + $this->shippingCost(), 2);
+        return round($this->subtotal() + $this->shippingCost($state), 2);
+    }
+
+    public function shippingBreakdown(?string $state = null): array
+    {
+        $isPunjab = $this->isPunjab($state);
+        $totalGrams = $this->totalWeightInGrams();
+        $totalKg = $this->totalWeightInKg();
+        $cost = $this->shippingCost($state);
+        $freeThreshold = $this->freeShippingThreshold($state);
+        $isFree = ($cost === 0.00 && $this->subtotal() > 0);
+
+        return [
+            'is_punjab' => $isPunjab,
+            'region_label' => $isPunjab ? 'Punjab (Local)' : 'Outside Punjab (National)',
+            'total_grams' => $totalGrams,
+            'total_kg' => $totalKg,
+            'formatted_weight' => $this->formattedTotalWeight(),
+            'shipping_cost' => $cost,
+            'free_shipping_threshold' => $freeThreshold,
+            'is_free' => $isFree,
+            'amount_needed_for_free' => $this->amountNeededForFreeShipping($state),
+        ];
     }
 
     public function syncWithDatabase(): array

@@ -14,6 +14,9 @@
             <a href="{{ route('admin.orders.index') }}" class="bg-forest-700 hover:bg-forest-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">
                 📦 Manage Orders
             </a>
+            <a href="{{ route('admin.settings.index') }}#payment-settings" class="bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold px-4 py-2 rounded-lg border border-gray-300 shadow-sm">
+                💳 Payment Settings
+            </a>
             <a href="{{ route('admin.shop-products.create') }}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">
                 + Add Shop Product
             </a>

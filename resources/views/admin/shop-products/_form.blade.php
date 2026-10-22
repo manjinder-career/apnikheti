@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
             <label for="shop_product_category_id" class="block text-xs font-semibold text-gray-700 mb-1">Shop Category</label>
             <select id="shop_product_category_id" name="shop_product_category_id" class="w-full text-sm p-3 border rounded-lg">
@@ -55,8 +55,23 @@
         </div>
 
         <div>
-            <label for="weight" class="block text-xs font-semibold text-gray-700 mb-1">Packet Weight / Seed Count (Optional)</label>
-            <input id="weight" type="text" name="weight" maxlength="50" value="{{ old('weight', $product->weight) }}" placeholder="e.g. 100g, 500g, 50 seeds" class="w-full text-sm p-3 border rounded-lg">
+            <label for="weight_grams" class="block text-xs font-semibold text-gray-700 mb-1">Shipping Weight (in Grams) *</label>
+            <div class="flex">
+                <input id="weight_grams" type="number" step="1" min="1" max="100000" name="weight_grams"
+                       value="{{ old('weight_grams', $product->weight_grams ?? ($product->exists ? $product->getWeightInGrams() : 100)) }}"
+                       placeholder="e.g. 100, 500, 1000" class="w-full text-sm p-3 border rounded-l-lg font-mono">
+                <span class="inline-flex items-center px-3 bg-gray-100 border border-l-0 rounded-r-lg text-xs font-bold text-gray-600">
+                    g
+                </span>
+            </div>
+            <p class="mt-1 text-[10px] text-gray-500">100g = 0.1 Kg • 1000g = 1 Kg • 5000g = 5 Kg</p>
+            @error('weight_grams') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+        </div>
+
+        <div>
+            <label for="weight" class="block text-xs font-semibold text-gray-700 mb-1">Display Label (Optional)</label>
+            <input id="weight" type="text" name="weight" maxlength="50" value="{{ old('weight', $product->weight) }}" placeholder="e.g. 500g or 1 Kg Pack" class="w-full text-sm p-3 border rounded-lg">
+            <p class="mt-1 text-[10px] text-gray-500">Auto-generated if left blank.</p>
             @error('weight') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
         </div>
     </div>

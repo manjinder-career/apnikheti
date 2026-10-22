@@ -16,8 +16,10 @@ class CartController extends Controller
         $shippingCost = $cart->shippingCost();
         $total = $cart->total();
         $count = $cart->count();
-        $freeShippingThreshold = CartService::FREE_SHIPPING_THRESHOLD;
-        $amountNeededForFreeShipping = max(0, $freeShippingThreshold - $subtotal);
+        $freeShippingThreshold = $cart->freeShippingThreshold();
+        $amountNeededForFreeShipping = $cart->amountNeededForFreeShipping();
+        $formattedWeight = $cart->formattedTotalWeight();
+        $breakdown = $cart->shippingBreakdown();
 
         return view('shop.cart', compact(
             'items',
@@ -27,6 +29,8 @@ class CartController extends Controller
             'count',
             'freeShippingThreshold',
             'amountNeededForFreeShipping',
+            'formattedWeight',
+            'breakdown',
             'syncNotices'
         ));
     }

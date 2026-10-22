@@ -105,7 +105,7 @@
                                     @endif
                                     <div>
                                         <span>{{ $product->name }}</span>
-                                        <span class="block text-[11px] text-gray-400 capitalize">{{ $product->product_type }} • {{ $product->unit }}</span>
+                                        <span class="block text-[11px] text-gray-400 capitalize">{{ $product->product_type }} • {{ $product->unit }} • ⚖️ {{ $product->formattedWeight() }}</span>
                                     </div>
                                 </div>
                             </td>

@@ -46,8 +46,9 @@
         <h2 class="text-base font-bold text-slate-900 mb-6">Delivery Progress</h2>
 
         @php
-            $steps = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered'];
-            $currentIndex = array_search($order->status, $steps);
+            $steps = ['pending', 'processing', 'shipped'];
+            $effectiveStatus = in_array($order->status, ['shipped', 'out_for_delivery', 'delivered']) ? 'shipped' : $order->status;
+            $currentIndex = array_search($effectiveStatus, $steps);
             $isCancelled = $order->status === 'cancelled';
         @endphp
 
@@ -58,20 +59,18 @@
                 <p class="text-xs text-rose-600 mt-0.5">If you have any questions or would like to re-order, please contact our seed coordinator team.</p>
             </div>
         @else
-            <div class="relative">
-                <div class="hidden sm:block absolute top-5 left-8 right-8 h-1 bg-slate-200 -z-0">
+            <div class="relative py-2">
+                <div class="hidden sm:block absolute top-7 left-16 right-16 h-1 bg-slate-200 -z-0">
                     <div class="h-1 bg-forest-600 transition-all duration-500"
                          style="width: {{ $currentIndex === false ? 0 : ($currentIndex / (count($steps) - 1)) * 100 }}%"></div>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 relative z-10">
+                <div class="grid grid-cols-3 gap-4 relative z-10">
                     @php
                         $stepLabels = [
                             'pending' => ['name' => 'Order Placed', 'icon' => '📝'],
                             'processing' => ['name' => 'Processing & Packed', 'icon' => '📦'],
                             'shipped' => ['name' => 'Dispatched', 'icon' => '🚚'],
-                            'out_for_delivery' => ['name' => 'Out for Delivery', 'icon' => '🛵'],
-                            'delivered' => ['name' => 'Delivered', 'icon' => '✅'],
                         ];
                     @endphp
 
@@ -94,23 +93,33 @@
                 </div>
             </div>
 
-            @if($order->tracking_number)
-                <div class="mt-8 bg-sky-50 border border-sky-100 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
+            @if($effectiveStatus === 'shipped' || $order->tracking_number)
+                <div class="mt-8 bg-gradient-to-r from-emerald-50 via-white to-sky-50 border border-emerald-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs shadow-sm">
                     <div>
+                        <span class="font-bold text-emerald-900 block text-xs mb-0.5">📦 Order Dispatched to Courier Partner</span>
                         <span class="text-slate-500">Shipping Carrier:</span>
-                        <strong class="text-slate-800 ml-1">{{ $order->courier_name ?? 'Speed Post / Courier' }}</strong>
-                        <span class="mx-2">•</span>
-                        <span class="text-slate-500">Tracking Code:</span>
-                        <strong class="font-mono text-sky-800 ml-1">{{ $order->tracking_number }}</strong>
+                        <strong class="text-slate-800 ml-1">{{ $order->courier_name ?? 'Postal / Express Courier' }}</strong>
+                        @if($order->tracking_number)
+                            <span class="mx-2">•</span>
+                            <span class="text-slate-500">Tracking Code:</span>
+                            <strong class="font-mono text-sky-800 ml-1">{{ $order->tracking_number }}</strong>
+                        @endif
                     </div>
-                    <span class="text-slate-500 italic">Please allow 24-48 hours for courier tracking events to sync.</span>
+                    <div class="text-right">
+                        <span class="text-emerald-800 font-semibold text-[11px] block">✓ Dispatched</span>
+                        <span class="text-slate-400 italic text-[10px]">Ongoing delivery is managed directly by the courier carrier</span>
+                    </div>
                 </div>
             @endif
         @endif
     </div>
 
-    <!-- UPI Payment & Scanner Section -->
-    @if($order->payment_method === 'upi' || $order->payment_method === 'bank_transfer' || $order->payment_status !== 'paid')
+    <!-- Payment Gateway / Scanner Section -->
+    @if($order->payment_method === 'razorpay')
+        <div class="mb-8">
+            @include('shop.partials.razorpay-payment-box', ['order' => $order])
+        </div>
+    @elseif($order->payment_method === 'upi' || $order->payment_method === 'bank_transfer' || $order->payment_status !== 'paid')
         <div class="mb-8">
             @include('shop.partials.upi-payment-box', ['order' => $order])
         </div>

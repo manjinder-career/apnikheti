@@ -113,6 +113,7 @@ class AdminShopProductController extends Controller
             'stock_quantity' => ['nullable', 'integer', 'min:0', 'max:1000000'],
             'unit' => ['nullable', 'string', 'max:50'],
             'weight' => ['nullable', 'string', 'max:50'],
+            'weight_grams' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'image_url' => [
                 'nullable',
@@ -126,6 +127,21 @@ class AdminShopProductController extends Controller
 
         $validated['stock_quantity'] = (int) ($validated['stock_quantity'] ?? ($product ? $product->stock_quantity : 50));
         $validated['unit'] = $validated['unit'] ?? ($product ? $product->unit : 'packet');
+
+        if (! empty($validated['weight_grams'])) {
+            $validated['weight_grams'] = (int) $validated['weight_grams'];
+            if (empty($validated['weight'])) {
+                $g = $validated['weight_grams'];
+                $validated['weight'] = ($g >= 1000) ? (($g / 1000) . ' Kg') : ($g . 'g');
+            }
+        } elseif (! empty($validated['weight'])) {
+            $str = strtolower(trim($validated['weight']));
+            if (preg_match('/([\d\.]+)\s*(kg|kilo|kilogram)/', $str, $matches)) {
+                $validated['weight_grams'] = (int) round(((float) $matches[1]) * 1000);
+            } elseif (preg_match('/([\d\.]+)\s*(g|gm|gram|grams)/', $str, $matches)) {
+                $validated['weight_grams'] = (int) round((float) $matches[1]);
+            }
+        }
 
         if ($request->hasFile('image')) {
             $validated['image_url'] = 'storage/'.$request->file('image')->store('shop-products', 'public');

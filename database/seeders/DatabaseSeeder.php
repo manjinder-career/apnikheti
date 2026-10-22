@@ -74,6 +74,20 @@ class DatabaseSeeder extends Seeder
             ['key' => 'upi_id', 'value' => 'apnikheti@sbi', 'group' => 'ecommerce'],
             ['key' => 'upi_payee_name', 'value' => 'Apni Kheti Apne Beej', 'group' => 'ecommerce'],
             ['key' => 'upi_note', 'value' => 'Please note: Your order will be processed after our team verifies the payment transaction ID.', 'group' => 'ecommerce'],
+            ['key' => 'enable_simple_upi', 'value' => '1', 'group' => 'ecommerce'],
+            ['key' => 'enable_razorpay', 'value' => '1', 'group' => 'ecommerce'],
+            ['key' => 'default_payment_method', 'value' => 'razorpay', 'group' => 'ecommerce'],
+            ['key' => 'razorpay_mode', 'value' => 'test', 'group' => 'ecommerce'],
+            ['key' => 'razorpay_merchant_name', 'value' => 'Apni Kheti Apne Beej', 'group' => 'ecommerce'],
+            ['key' => 'razorpay_key_id', 'value' => '', 'group' => 'ecommerce'],
+            ['key' => 'razorpay_key_secret', 'value' => '', 'group' => 'ecommerce'],
+            ['key' => 'razorpay_webhook_secret', 'value' => '', 'group' => 'ecommerce'],
+            ['key' => 'shipping_punjab_base_cost', 'value' => '50.00', 'group' => 'shipping'],
+            ['key' => 'shipping_punjab_per_kg', 'value' => '30.00', 'group' => 'shipping'],
+            ['key' => 'shipping_punjab_free_threshold', 'value' => '500.00', 'group' => 'shipping'],
+            ['key' => 'shipping_outside_base_cost', 'value' => '80.00', 'group' => 'shipping'],
+            ['key' => 'shipping_outside_per_kg', 'value' => '50.00', 'group' => 'shipping'],
+            ['key' => 'shipping_outside_free_threshold', 'value' => '800.00', 'group' => 'shipping'],
         ];
 
         foreach ($settings as $setting) {

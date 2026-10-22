@@ -89,7 +89,9 @@
                                 <td class="p-3 text-right font-bold text-gray-900">₹{{ number_format((float) $order->subtotal, 2) }}</td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="p-2 text-right text-gray-600 font-semibold">Shipping & Handling:</td>
+                                <td colspan="4" class="p-2 text-right text-gray-600 font-semibold">
+                                    Shipping & Handling ({{ $order->shipping_state ?? 'Punjab' }}):
+                                </td>
                                 <td class="p-2 text-right font-bold text-gray-900">
                                     {{ (float) $order->shipping_cost > 0 ? '₹'.number_format((float) $order->shipping_cost, 2) : 'FREE' }}
                                 </td>
@@ -153,14 +155,34 @@
                     </div>
 
                     <div class="pt-2 border-t border-gray-100">
-                        <span class="text-gray-500 block font-semibold mb-1">Customer Txn ID / UTR:</span>
-                        @if($order->transaction_id)
-                            <div class="flex items-center justify-between bg-sky-50 border border-sky-200 rounded-lg p-2.5">
-                                <code class="font-mono font-bold text-sky-900 text-xs select-all">{{ $order->transaction_id }}</code>
-                                <span class="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded font-semibold">Submitted</span>
-                            </div>
+                        @if($order->payment_method === 'razorpay')
+                            <span class="text-gray-500 block font-semibold mb-1">Razorpay Payment Gateway Details:</span>
+                            @if($order->razorpay_payment_id || $order->transaction_id)
+                                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] text-emerald-800 font-bold uppercase">Payment ID:</span>
+                                        <code class="font-mono font-bold text-emerald-950 text-xs select-all">{{ $order->razorpay_payment_id ?: $order->transaction_id }}</code>
+                                    </div>
+                                    @if($order->razorpay_order_id)
+                                        <div class="flex items-center justify-between text-[11px] text-slate-500">
+                                            <span>Order ID:</span>
+                                            <code class="font-mono text-slate-700 text-[10px]">{{ $order->razorpay_order_id }}</code>
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
+                                <p class="text-gray-400 italic bg-gray-50 p-2.5 rounded-lg border border-dashed text-[11px]">Payment not initiated/completed yet via Razorpay.</p>
+                            @endif
                         @else
-                            <p class="text-gray-400 italic bg-gray-50 p-2.5 rounded-lg border border-dashed text-[11px]">No transaction ID submitted yet by customer.</p>
+                            <span class="text-gray-500 block font-semibold mb-1">Customer Txn ID / UTR:</span>
+                            @if($order->transaction_id)
+                                <div class="flex items-center justify-between bg-sky-50 border border-sky-200 rounded-lg p-2.5">
+                                    <code class="font-mono font-bold text-sky-900 text-xs select-all">{{ $order->transaction_id }}</code>
+                                    <span class="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded font-semibold">Submitted</span>
+                                </div>
+                            @else
+                                <p class="text-gray-400 italic bg-gray-50 p-2.5 rounded-lg border border-dashed text-[11px]">No transaction ID submitted yet by customer.</p>
+                            @endif
                         @endif
                     </div>
 
@@ -198,9 +220,7 @@
                         <select name="status" required class="w-full text-xs p-2.5 rounded-lg border border-gray-300 bg-white">
                             <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Pending Confirmation</option>
                             <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Processing & Packing</option>
-                            <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Shipped / Dispatched</option>
-                            <option value="out_for_delivery" {{ $order->status === 'out_for_delivery' ? 'selected' : '' }}>Out for Delivery</option>
-                            <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                            <option value="shipped" {{ in_array($order->status, ['shipped', 'out_for_delivery', 'delivered']) ? 'selected' : '' }}>Dispatched (Handed to Courier)</option>
                             <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Cancelled (Auto-Restocks Inventory)</option>
                         </select>
                     </div>

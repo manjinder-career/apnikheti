@@ -17,6 +17,7 @@ class ShopProduct extends Model
         'stock_quantity',
         'unit',
         'weight',
+        'weight_grams',
         'image_url',
         'is_available',
         'is_published',
@@ -25,9 +26,50 @@ class ShopProduct extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'stock_quantity' => 'integer',
+        'weight_grams' => 'integer',
         'is_available' => 'boolean',
         'is_published' => 'boolean',
     ];
+
+    public function getWeightInGrams(): int
+    {
+        if ($this->weight_grams !== null && $this->weight_grams > 0) {
+            return (int) $this->weight_grams;
+        }
+
+        if (! empty($this->weight)) {
+            $str = strtolower(trim($this->weight));
+            if (preg_match('/([\d\.]+)\s*(kg|kilo|kilogram)/', $str, $matches)) {
+                return (int) round(((float) $matches[1]) * 1000);
+            }
+            if (preg_match('/([\d\.]+)\s*(g|gm|gram|grams)/', $str, $matches)) {
+                return (int) round((float) $matches[1]);
+            }
+            if (str_contains($str, 'box')) {
+                return 1000;
+            }
+            if (is_numeric($str)) {
+                return (int) $str;
+            }
+        }
+
+        return 100; // default 100g for small seed packets
+    }
+
+    public function formattedWeight(): string
+    {
+        if (! empty($this->weight)) {
+            return $this->weight;
+        }
+
+        $grams = $this->getWeightInGrams();
+        if ($grams >= 1000) {
+            $kg = $grams / 1000;
+            return ($kg == (int) $kg ? (int) $kg : number_format($kg, 1)) . ' Kg';
+        }
+
+        return $grams . 'g';
+    }
 
     public function isInStock(): bool
     {

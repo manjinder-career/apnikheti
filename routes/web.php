@@ -82,9 +82,13 @@ Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')
 
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::get('/checkout/shipping-quote', [CheckoutController::class, 'shippingQuote'])->name('checkout.shipping-quote');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/orders/{orderNumber}/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::post('/orders/{orderNumber}/payment', [CheckoutController::class, 'submitPayment'])->name('orders.payment.submit');
+Route::post('/orders/{orderNumber}/razorpay/verify', [CheckoutController::class, 'verifyRazorpay'])->name('orders.razorpay.verify');
+Route::post('/orders/{orderNumber}/razorpay/order', [CheckoutController::class, 'createRazorpayOrder'])->name('orders.razorpay.order');
+Route::post('/webhooks/razorpay', [CheckoutController::class, 'razorpayWebhook'])->name('webhooks.razorpay');
 
 // Order Tracking
 Route::get('/track-order', [OrderTrackingController::class, 'showForm'])->name('orders.track');

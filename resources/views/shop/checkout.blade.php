@@ -23,7 +23,38 @@
         </div>
     @endif
 
-    <form action="{{ route('checkout.store') }}" method="POST" id="checkout-form">
+    <form action="{{ route('checkout.store') }}" method="POST" id="checkout-form"
+          x-data="{
+              subtotal: {{ (float) $subtotal }},
+              shippingCost: {{ (float) $shippingCost }},
+              total: {{ (float) $total }},
+              state: '{{ addslashes(old('shipping_state', $user->state ?? 'Punjab')) }}',
+              weightFormatted: '{{ $shippingBreakdown['formatted_weight'] }}',
+              isPunjab: {{ $shippingBreakdown['is_punjab'] ? 'true' : 'false' }},
+              isFree: {{ $shippingBreakdown['is_free'] ? 'true' : 'false' }},
+              regionLabel: '{{ $shippingBreakdown['region_label'] }}',
+              loadingQuote: false,
+              async updateShipping() {
+                  if (!this.state || this.state.trim().length === 0) return;
+                  this.loadingQuote = true;
+                  try {
+                      const res = await fetch('{{ route('checkout.shipping-quote') }}?state=' + encodeURIComponent(this.state));
+                      if (res.ok) {
+                          const data = await res.json();
+                          this.shippingCost = data.shippingCost;
+                          this.total = data.total;
+                          this.isFree = data.isFree;
+                          this.isPunjab = data.isPunjab;
+                          this.regionLabel = data.regionLabel;
+                          this.weightFormatted = data.formattedWeight;
+                      }
+                  } catch(e) {
+                      console.error('Shipping quote error', e);
+                  } finally {
+                      this.loadingQuote = false;
+                  }
+              }
+          }">
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -92,9 +123,34 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">State <span class="text-red-500">*</span></label>
-                            <input type="text" name="shipping_state" required value="{{ old('shipping_state', $user->state ?? 'Punjab') }}" placeholder="e.g. Punjab"
-                                   class="w-full text-xs px-3.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-sky-600">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">State <span class="text-red-500">*</span></label>
+                                <span class="text-[10px] text-slate-400" x-show="loadingQuote">Calculating rate...</span>
+                            </div>
+                            <input type="text" name="shipping_state" required list="indian-states"
+                                   x-model="state" @input.debounce.300ms="updateShipping()" @change="updateShipping()"
+                                   placeholder="e.g. Punjab"
+                                   class="w-full text-xs px-3.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-sky-600 font-medium">
+                            <datalist id="indian-states">
+                                <option value="Punjab">
+                                <option value="Haryana">
+                                <option value="Delhi">
+                                <option value="Himachal Pradesh">
+                                <option value="Rajasthan">
+                                <option value="Uttar Pradesh">
+                                <option value="Jammu and Kashmir">
+                                <option value="Uttarakhand">
+                                <option value="Chandigarh">
+                                <option value="Maharashtra">
+                                <option value="Gujarat">
+                                <option value="Madhya Pradesh">
+                                <option value="Bihar">
+                                <option value="West Bengal">
+                                <option value="Karnataka">
+                                <option value="Tamil Nadu">
+                                <option value="Telangana">
+                                <option value="Kerala">
+                            </datalist>
                             @error('shipping_state')
                                 <span class="text-xs text-red-600 mt-1 block">{{ $message }}</span>
                             @enderror
@@ -143,47 +199,125 @@
                     </div>
                 </div>
 
-                <!-- Payment Method Section (UPI Only) -->
-                <div class="bg-white rounded-3xl border border-sky-100 p-6 md:p-8 shadow-sm space-y-4">
+                <!-- Payment Method Section -->
+                @php
+                    $isBoth = ($enableSimpleUpi ?? true) && ($enableRazorpay ?? true);
+                    $selectedMethod = old('payment_method', ($defaultMethod ?? ($enableRazorpay ? 'razorpay' : 'upi')));
+                @endphp
+
+                <div class="bg-white rounded-3xl border border-sky-100 p-6 md:p-8 shadow-sm space-y-4"
+                     x-data="{ selectedMethod: '{{ $selectedMethod }}' }">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                         <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
                             <span>2.</span>
                             <span>Payment Method</span>
                         </h2>
                         <span class="text-[11px] font-bold bg-sky-100 text-sky-800 px-2.5 py-0.5 rounded-full">
-                            UPI Payment
+                            @if($isBoth)
+                                Choose Payment Option
+                            @elseif($enableRazorpay ?? false)
+                                Razorpay Gateway
+                            @else
+                                Simple UPI Payment
+                            @endif
                         </span>
                     </div>
 
-                    <input type="hidden" name="payment_method" value="upi">
-
-                    <div class="bg-gradient-to-r from-sky-50 via-white to-sky-50/50 border-2 border-sky-300 rounded-2xl p-5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-11 h-11 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xl shadow-sm border border-sky-200">
-                                    📱
-                                </div>
-                                <div>
-                                    <span class="text-xs font-bold text-slate-900 block">UPI / QR Code Transfer</span>
-                                    <span class="text-[11px] text-slate-600">Google Pay • PhonePe • Paytm • BHIM • Cred • Banking Apps</span>
-                                </div>
-                            </div>
-                            <span class="text-xs font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-sm flex items-center space-x-1">
-                                <span>✓</span>
-                                <span>Selected</span>
-                            </span>
+                    @error('payment_method')
+                        <div class="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+                            ⚠️ {{ $message }}
                         </div>
+                    @enderror
 
-                        <p class="text-xs text-slate-600 bg-white/90 p-3.5 rounded-xl border border-sky-100 leading-relaxed">
-                            Official UPI ID and QR code scanner will appear on the confirmation page immediately after clicking Place Order. You can pay via any UPI app and submit your 12-digit transaction ID.
-                        </p>
+                    <div class="space-y-3">
+                        @if($enableRazorpay ?? true)
+                            <!-- Razorpay Option Card -->
+                            <label class="block cursor-pointer transition"
+                                   @click="selectedMethod = 'razorpay'">
+                                <div class="rounded-2xl p-4 md:p-5 border-2 transition"
+                                     :class="selectedMethod === 'razorpay' ? 'border-forest-700 bg-gradient-to-r from-emerald-50/70 via-white to-emerald-50/30 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex items-start space-x-3">
+                                            <input type="radio" name="payment_method" value="razorpay"
+                                                   x-model="selectedMethod"
+                                                   class="mt-1 text-forest-700 focus:ring-forest-600">
+                                            <div>
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-base">⚡</span>
+                                                    <span class="text-xs md:text-sm font-bold text-slate-900">Razorpay Payment Gateway</span>
+                                                    <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                                                        Instant Confirmation
+                                                    </span>
+                                                </div>
+                                                <p class="text-xs text-slate-500 mt-0.5">
+                                                    Pay securely using UPI Apps (Google Pay, PhonePe, Paytm), Cards, Net Banking & Wallets.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span class="hidden sm:inline-flex text-xs font-bold px-2 py-0.5 rounded-md"
+                                              :class="selectedMethod === 'razorpay' ? 'bg-forest-700 text-white' : 'text-slate-400'">
+                                            <span x-text="selectedMethod === 'razorpay' ? 'Selected' : 'Select'"></span>
+                                        </span>
+                                    </div>
 
-                        <div class="flex items-start space-x-2 text-[11px] text-amber-900 bg-amber-50/90 p-3 rounded-xl border border-amber-200">
-                            <span class="text-base leading-none">⚠️</span>
-                            <span class="leading-relaxed">
-                                <strong>Important:</strong> Traditional seed packets are carefully hand-inspected and dispatched upon payment verification by our conservation team.
-                            </span>
-                        </div>
+                                    <div x-show="selectedMethod === 'razorpay'" class="mt-3.5 pt-3 border-t border-emerald-100 text-xs text-slate-600 space-y-2">
+                                        <div class="flex flex-wrap gap-1.5 text-[11px]">
+                                            <span class="bg-white border border-emerald-200 px-2 py-0.5 rounded-md text-emerald-900 font-semibold">✓ Google Pay / PhonePe / Paytm</span>
+                                            <span class="bg-white border border-emerald-200 px-2 py-0.5 rounded-md text-emerald-900 font-semibold">✓ All Debit & Credit Cards</span>
+                                            <span class="bg-white border border-emerald-200 px-2 py-0.5 rounded-md text-emerald-900 font-semibold">✓ 50+ Netbanking Banks</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500">
+                                            A secure Razorpay checkout screen will open to complete payment instantly.
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        @endif
+
+                        @if($enableSimpleUpi ?? true)
+                            <!-- Simple UPI QR Option Card -->
+                            <label class="block cursor-pointer transition"
+                                   @click="selectedMethod = 'upi'">
+                                <div class="rounded-2xl p-4 md:p-5 border-2 transition"
+                                     :class="selectedMethod === 'upi' ? 'border-sky-600 bg-gradient-to-r from-sky-50/70 via-white to-sky-50/30 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex items-start space-x-3">
+                                            <input type="radio" name="payment_method" value="upi"
+                                                   x-model="selectedMethod"
+                                                   class="mt-1 text-sky-700 focus:ring-sky-600">
+                                            <div>
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-base">📱</span>
+                                                    <span class="text-xs md:text-sm font-bold text-slate-900">Simple UPI / QR Code Transfer</span>
+                                                    <span class="text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full border border-sky-200">
+                                                        Manual Verification
+                                                    </span>
+                                                </div>
+                                                <p class="text-xs text-slate-500 mt-0.5">
+                                                    Scan our UPI QR code directly or pay to our UPI ID, then submit your 12-digit UTR ID.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span class="hidden sm:inline-flex text-xs font-bold px-2 py-0.5 rounded-md"
+                                              :class="selectedMethod === 'upi' ? 'bg-sky-700 text-white' : 'text-slate-400'">
+                                            <span x-text="selectedMethod === 'upi' ? 'Selected' : 'Select'"></span>
+                                        </span>
+                                    </div>
+
+                                    <div x-show="selectedMethod === 'upi'" class="mt-3.5 pt-3 border-t border-sky-100 text-xs text-slate-600 space-y-2">
+                                        <p class="text-xs text-slate-600 bg-white/90 p-3 rounded-xl border border-sky-100 leading-relaxed">
+                                            Official UPI ID and QR code scanner will appear immediately after placing order. You can submit your 12-digit transaction ID anytime.
+                                        </p>
+                                        <div class="flex items-start space-x-2 text-[11px] text-amber-900 bg-amber-50/90 p-3 rounded-xl border border-amber-200">
+                                            <span class="text-base leading-none">⚠️</span>
+                                            <span class="leading-relaxed">
+                                                <strong>Notice:</strong> Your order will be packed and dispatched after our seed conservation team manually verifies your transaction ID.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -215,24 +349,43 @@
                     </div>
 
                     <!-- Financial Summary -->
-                    <div class="border-t border-slate-100 pt-4 space-y-2 text-xs text-slate-600">
+                    <div class="border-t border-slate-100 pt-4 space-y-2.5 text-xs text-slate-600">
                         <div class="flex justify-between">
                             <span>Subtotal</span>
                             <span class="font-semibold text-slate-900">₹{{ number_format($subtotal, 2) }}</span>
                         </div>
 
+                        <div class="flex justify-between items-center text-[11px] text-slate-500">
+                            <span>Total Package Weight</span>
+                            <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                                📦 <span x-text="weightFormatted">{{ $shippingBreakdown['formatted_weight'] }}</span>
+                            </span>
+                        </div>
+
                         <div class="flex justify-between items-center">
-                            <span>Shipping & Packaging</span>
-                            @if($shippingCost == 0)
-                                <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">FREE</span>
-                            @else
-                                <span class="font-semibold text-slate-900">₹{{ number_format($shippingCost, 2) }}</span>
-                            @endif
+                            <div>
+                                <span>Shipping & Packaging</span>
+                                <span class="block text-[10px] text-slate-400" x-text="regionLabel">
+                                    {{ $shippingBreakdown['region_label'] }}
+                                </span>
+                            </div>
+                            <div>
+                                <template x-if="isFree">
+                                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">FREE</span>
+                                </template>
+                                <template x-if="!isFree">
+                                    <span class="font-semibold text-slate-900" x-text="'₹' + Number(shippingCost).toFixed(2)">
+                                        ₹{{ number_format($shippingCost, 2) }}
+                                    </span>
+                                </template>
+                            </div>
                         </div>
 
                         <div class="border-t border-slate-100 pt-3 flex justify-between items-baseline">
                             <span class="text-sm font-bold text-slate-900">Grand Total</span>
-                            <span class="text-2xl font-black text-forest-800">₹{{ number_format($total, 2) }}</span>
+                            <span class="text-2xl font-black text-forest-800" x-text="'₹' + Number(total).toFixed(2)">
+                                ₹{{ number_format($total, 2) }}
+                            </span>
                         </div>
                     </div>
 

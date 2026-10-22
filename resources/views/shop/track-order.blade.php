@@ -52,10 +52,11 @@
                         </span>
                     </div>
 
-                    <!-- Progress Stepper -->
+                    <!-- Progress Stepper (Tracked till Dispatch) -->
                     @php
-                        $steps = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered'];
-                        $currentIndex = array_search($order->status, $steps);
+                        $steps = ['pending', 'processing', 'shipped'];
+                        $effectiveStatus = in_array($order->status, ['shipped', 'out_for_delivery', 'delivered']) ? 'shipped' : $order->status;
+                        $currentIndex = array_search($effectiveStatus, $steps);
                         $isCancelled = $order->status === 'cancelled';
                     @endphp
 
@@ -66,19 +67,17 @@
                         </div>
                     @else
                         <div class="py-8 relative">
-                            <div class="hidden sm:block absolute top-12 left-8 right-8 h-1 bg-slate-200 -z-0">
+                            <div class="hidden sm:block absolute top-12 left-16 right-16 h-1 bg-slate-200 -z-0">
                                 <div class="h-1 bg-forest-600 transition-all duration-500"
                                      style="width: {{ $currentIndex === false ? 0 : ($currentIndex / (count($steps) - 1)) * 100 }}%"></div>
                             </div>
 
-                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 relative z-10">
+                            <div class="grid grid-cols-3 gap-4 relative z-10">
                                 @php
                                     $stepLabels = [
                                         'pending' => ['name' => 'Order Placed', 'icon' => '📝'],
                                         'processing' => ['name' => 'Packed', 'icon' => '📦'],
                                         'shipped' => ['name' => 'Dispatched', 'icon' => '🚚'],
-                                        'out_for_delivery' => ['name' => 'Out for Delivery', 'icon' => '🛵'],
-                                        'delivered' => ['name' => 'Delivered', 'icon' => '✅'],
                                     ];
                                 @endphp
 
@@ -101,23 +100,31 @@
                             </div>
                         </div>
 
-                        @if($order->tracking_number)
-                            <div class="bg-sky-50 border border-sky-100 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
+                        @if($effectiveStatus === 'shipped' || $order->tracking_number)
+                            <div class="bg-gradient-to-r from-emerald-50 via-white to-sky-50 border border-emerald-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs shadow-sm">
                                 <div>
+                                    <span class="font-bold text-emerald-900 block text-xs mb-0.5">📦 Order Dispatched to Courier Partner</span>
                                     <span class="text-slate-500">Shipping Partner:</span>
-                                    <strong class="text-slate-800 ml-1">{{ $order->courier_name ?? 'Postal Courier' }}</strong>
-                                    <span class="mx-2">•</span>
-                                    <span class="text-slate-500">Tracking Code:</span>
-                                    <strong class="font-mono text-sky-800 ml-1">{{ $order->tracking_number }}</strong>
+                                    <strong class="text-slate-800 ml-1">{{ $order->courier_name ?? 'Postal / Express Courier' }}</strong>
+                                    @if($order->tracking_number)
+                                        <span class="mx-2">•</span>
+                                        <span class="text-slate-500">Tracking Code:</span>
+                                        <strong class="font-mono text-sky-800 ml-1">{{ $order->tracking_number }}</strong>
+                                    @endif
                                 </div>
-                                <span class="text-slate-500 italic">Expected in 3-5 business days</span>
+                                <div class="text-right">
+                                    <span class="text-emerald-800 font-semibold text-[11px] block">✓ Handed over for delivery</span>
+                                    <span class="text-slate-400 italic text-[10px]">Transit milestones tracked directly with courier partner</span>
+                                </div>
                             </div>
                         @endif
                     @endif
                 </div>
 
-                <!-- UPI Payment & Scanner Section -->
-                @if($order->payment_method === 'upi' || $order->payment_method === 'bank_transfer' || $order->payment_status !== 'paid')
+                <!-- Payment Gateway / Scanner Section -->
+                @if($order->payment_method === 'razorpay')
+                    @include('shop.partials.razorpay-payment-box', ['order' => $order])
+                @elseif($order->payment_method === 'upi' || $order->payment_method === 'bank_transfer' || $order->payment_status !== 'paid')
                     @include('shop.partials.upi-payment-box', ['order' => $order])
                 @endif
 
