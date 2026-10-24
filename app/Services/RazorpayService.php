@@ -104,33 +104,46 @@ class RazorpayService
     }
 
     /**
+     * Check whether an order/payment ID represents a mock or simulation.
+     */
+    public function isSimulation(string $orderId, string $paymentId): bool
+    {
+        return str_starts_with($orderId, 'order_sim_')
+            || str_starts_with($orderId, 'order_mock_')
+            || str_starts_with($paymentId, 'pay_sim_');
+    }
+
+    /**
      * Verify the payment signature returned by the Razorpay Checkout popup.
+     * Formula: HMAC-SHA256(order_id + '|' + payment_id, key_secret) === signature
+     *
+     * @see https://razorpay.com/docs/payments/payment-gateway/web-integration/standard/build-integration#step-5-verify-signature
      */
     public function verifySignature(string $razorpayOrderId, string $razorpayPaymentId, ?string $signature): bool
     {
         $secret = $this->getKeySecret();
 
-        // If secret is set and signature is provided, verify using HMAC-SHA256
-        if (! empty($secret) && ! empty($signature)) {
-            $expectedSignature = hash_hmac('sha256', $razorpayOrderId . '|' . $razorpayPaymentId, $secret);
-            if (hash_equals($expectedSignature, $signature)) {
-                return true;
+        // 1. If key secret is configured, strictly enforce cryptographic HMAC-SHA256 verification
+        if (! empty($secret)) {
+            if (empty($signature)) {
+                // Allow simulation bypass only if specifically marked as a simulation order
+                return $this->isSimulation($razorpayOrderId, $razorpayPaymentId);
             }
+
+            $expectedSignature = hash_hmac('sha256', $razorpayOrderId . '|' . $razorpayPaymentId, $secret);
+
+            return hash_equals($expectedSignature, $signature);
         }
 
-        // If in test simulation / demo mode (e.g. unconfigured keys or simulated order)
-        if (str_starts_with($razorpayOrderId, 'order_sim_')
-            || str_starts_with($razorpayOrderId, 'order_mock_')
-            || str_starts_with($razorpayPaymentId, 'pay_sim_')
-            || empty($secret)) {
-            return true;
-        }
-
-        return false;
+        // 2. Pure demo/sandbox fallback when keys are completely unset in development
+        return $this->isSimulation($razorpayOrderId, $razorpayPaymentId) || empty($secret);
     }
 
     /**
-     * Verify incoming Razorpay webhook signature.
+     * Verify incoming Razorpay webhook signature according to official specifications:
+     * Formula: HMAC-SHA256(raw_payload, webhook_secret) === signature
+     *
+     * @see https://razorpay.com/docs/webhooks/validate-test#validate-webhooks
      */
     public function verifyWebhookSignature(string $payload, ?string $signature): bool
     {

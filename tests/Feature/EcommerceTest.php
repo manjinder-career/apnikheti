@@ -680,6 +680,133 @@ class EcommerceTest extends TestCase
         $this->assertEquals('processing', $order->status);
     }
 
+    public function test_razorpay_webhook_rejects_missing_signature_when_secret_is_set()
+    {
+        SiteSetting::set('razorpay_webhook_secret', 'whsec_my_test_secret_999', 'ecommerce');
+
+        $payloadJson = json_encode([
+            'event' => 'payment.captured',
+            'payload' => ['payment' => ['entity' => ['id' => 'pay_123']]],
+        ]);
+
+        $response = $this->call(
+            'POST',
+            route('webhooks.razorpay'),
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            $payloadJson
+        );
+
+        $response->assertStatus(400);
+        $response->assertJson(['error' => 'Invalid or missing webhook signature']);
+    }
+
+    public function test_razorpay_webhook_rejects_tampered_signature()
+    {
+        SiteSetting::set('razorpay_webhook_secret', 'whsec_my_test_secret_999', 'ecommerce');
+
+        $payloadJson = json_encode([
+            'event' => 'payment.captured',
+            'payload' => ['payment' => ['entity' => ['id' => 'pay_123']]],
+        ]);
+
+        $response = $this->call(
+            'POST',
+            route('webhooks.razorpay'),
+            [],
+            [],
+            [],
+            [
+                'HTTP_X-Razorpay-Signature' => 'tampered_signature_hex_code_12345',
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            $payloadJson
+        );
+
+        $response->assertStatus(400);
+        $response->assertJson(['error' => 'Invalid or missing webhook signature']);
+    }
+
+    public function test_razorpay_webhook_records_payment_failed_event()
+    {
+        SiteSetting::set('razorpay_webhook_secret', 'whsec_my_test_secret_999', 'ecommerce');
+
+        $order = Order::where('order_number', 'AK-20261021-DEMO1')->first();
+        $order->update([
+            'payment_method' => 'razorpay',
+            'payment_status' => 'pending',
+            'razorpay_order_id' => 'order_webhook_fail_test',
+        ]);
+
+        $payloadData = [
+            'event' => 'payment.failed',
+            'payload' => [
+                'payment' => [
+                    'entity' => [
+                        'id' => 'pay_failed_112233',
+                        'order_id' => 'order_webhook_fail_test',
+                        'error_description' => 'Bank declined transaction due to insufficient balance.',
+                    ],
+                ],
+            ],
+        ];
+
+        $payloadJson = json_encode($payloadData);
+        $signature = hash_hmac('sha256', $payloadJson, 'whsec_my_test_secret_999');
+
+        $response = $this->call(
+            'POST',
+            route('webhooks.razorpay'),
+            [],
+            [],
+            [],
+            [
+                'HTTP_X-Razorpay-Signature' => $signature,
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            $payloadJson
+        );
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'ok']);
+
+        $order->refresh();
+        $this->assertEquals('pending', $order->payment_status);
+
+        $this->assertDatabaseHas('order_status_histories', [
+            'order_id' => $order->id,
+            'created_by' => 'Razorpay Webhook',
+        ]);
+    }
+
+    public function test_razorpay_payment_verification_rejects_mismatched_order_id()
+    {
+        SiteSetting::set('razorpay_key_secret', 'rzp_secret_key_testing_123', 'ecommerce');
+
+        $order = Order::where('order_number', 'AK-20261021-DEMO2')->first();
+        $order->update([
+            'payment_method' => 'razorpay',
+            'payment_status' => 'pending',
+            'razorpay_order_id' => 'order_legit_original_123',
+        ]);
+
+        $tamperedOrderId = 'order_attacker_spoofed_456';
+        $paymentId = 'pay_live_XYZ789';
+        $validSignatureForTamperedOrder = hash_hmac('sha256', $tamperedOrderId . '|' . $paymentId, 'rzp_secret_key_testing_123');
+
+        $response = $this->post(route('orders.razorpay.verify', $order->order_number), [
+            'razorpay_order_id' => $tamperedOrderId,
+            'razorpay_payment_id' => $paymentId,
+            'razorpay_signature' => $validSignatureForTamperedOrder,
+        ]);
+
+        $response->assertSessionHas('error');
+        $order->refresh();
+        $this->assertEquals('pending', $order->payment_status);
+    }
+
     public function test_checkout_respects_single_enabled_payment_method()
     {
         $product = ShopProduct::where('stock_quantity', '>=', 5)->first();
