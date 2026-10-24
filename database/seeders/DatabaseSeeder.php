@@ -27,28 +27,28 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Create Default Users & Roles
         $admin = User::firstOrCreate(
-            ['email' => 'admin@apnikheti.org'],
+            ['email' => 'admin@apnikheti.in'],
             [
                 'name' => 'Amrit Singh Chahal',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('punjab2580'),
                 'role' => 'super_admin',
             ]
         );
 
         $reviewer = User::firstOrCreate(
-            ['email' => 'reviewer@apnikheti.org'],
+            ['email' => 'reviewer@apnikheti.in'],
             [
                 'name' => 'Seed Reviewer',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('punjab2581'),
                 'role' => 'reviewer',
             ]
         );
 
         $editor = User::firstOrCreate(
-            ['email' => 'editor@apnikheti.org'],
+            ['email' => 'editor@apnikheti.in'],
             [
                 'name' => 'Content Editor',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('punjab2582'),
                 'role' => 'seed_editor',
             ]
         );
